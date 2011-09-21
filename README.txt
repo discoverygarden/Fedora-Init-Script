@@ -1,0 +1,16 @@
+An init script for launching fedora and checking its status.
+
+Use it with:
+	fedora start   # starts the server
+	fedora status  # checks the status of the server (running, stopped, error)
+	fedora stop    # terminates the server (if running)
+
+the script checks if the user trying to start it is root, in this case, permission errors can occur
+on future startups, so we don't normally allow it.  if you need to run it as root, you can supply
+an additional "-r" option to the launch command to force it to allow you
+
+if you are always going to run it as root, remove the ** CHECK FOR ROOT STATUS ** block at the top
+of the file
+
+future improvements planned are:
+	perform status check before startup to prevent multiple instances
