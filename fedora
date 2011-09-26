@@ -8,14 +8,13 @@
 # Description: Fedora commons content library
 ### END INIT INFO
 
+#****** CHECK FOR ROOT STATUS AND BLOCK IT ******#
 ASROOT=0 # a flag to force "run as root"
 for var in "$@"; do
   case $var in
     "-r")
       ASROOT=1
       ;;
-    "status") # allow status reports
-      ASROOT=1
   esac
 done
 
@@ -25,6 +24,7 @@ if [[ $EUID -eq 0 && $ASROOT -eq 0 ]]; then
   echo "This is not normally allowed, to force it use $0 -r"
   exit 1
 fi
+#************************************************#
 
 PID_FILE=/var/lock/fedora
 
