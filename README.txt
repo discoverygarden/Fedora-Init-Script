@@ -13,4 +13,4 @@ if you are always going to run it as root, remove the ** CHECK FOR ROOT STATUS *
 of the file
 
 future improvements planned are:
-	perform status check before startup to prevent multiple instances
+	perform better status check before startup to prevent multiple instances
