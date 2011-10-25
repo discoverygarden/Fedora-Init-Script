@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# chkconfig: 35 95 05
+# description: Fedora Commons with Islandora
+
 ### BEGIN INIT INFO
 # Provides: fedora
 # Required-Start: mysqld
