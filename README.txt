@@ -1,4 +1,6 @@
 An init script for launching fedora and checking its status.
+The EL_services directory contains some scripts created by Steve Young.
+We should look at combining good parts of these two approaches into a unified EL script and a DEB version too.
 
 Use it with:
 	fedora start   # starts the server
