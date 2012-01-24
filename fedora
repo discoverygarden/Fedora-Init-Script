@@ -11,23 +11,29 @@
 # Description: Fedora commons content library
 ### END INIT INFO
 
-#****** CHECK FOR ROOT STATUS AND BLOCK IT ******#
-ASROOT=0 # a flag to force "run as root"
-for var in "$@"; do
-  case $var in
-    "-r")
-      ASROOT=1
-      ;;
-  esac
-done
+if [ $FEDORA_USER ] ; then
+  LAUNCH_CMD="su $FEDORA_USER -c"
+  echo "Running fedora as $FEDORA_USER"
+else
+  #****** CHECK FOR ROOT STATUS AND BLOCK IT ******#
+  ASROOT=0 # a flag to force "run as root"
+  for var in "$@"; do
+    case $var in
+      "-r")
+        ASROOT=1
+        ;;
+    esac
+  done
 
-# check for root status
-if [[ $EUID -eq 0 && $ASROOT -eq 0 ]]; then
-  echo "It looks like you're trying to run this script as root"
-  echo "This is not normally allowed, to force it use $0 -r"
-  exit 1
+  # check for root status
+  if [[ $EUID -eq 0 && $ASROOT -eq 0 ]]; then
+    echo "It looks like you're trying to run this script as root"
+    echo "This is not normally allowed, to force it use $0 -r"
+    exit 1
+  fi
+  #************************************************#
+  LAUNCH_CMD=
 fi
-#************************************************#
 
 PID_FILE=/var/lock/fedora
 
@@ -49,13 +55,15 @@ start()
 force-start()
 {
   echo "> Starting..."
-  $CATALINA_HOME/bin/startup.sh
+  $LAUNCH_CMD $CATALINA_HOME/bin/startup.sh
   #Kinda weak, but should work well enough...
   echo "Waiting for server startup to complete"
   sleep 2
   while [[ ! $(pgrep -nf "$JAVA_HOME.*$FEDORA_HOME.*fedora" | tee $PID_FILE) ]]; do
     sleep 0.5
   done
+  # make sure the right user owns the lock file
+  chown ${FEDORA_USER}. $PID_FILE
 }
 
 stop()
@@ -72,14 +80,14 @@ stop()
   fi
 
   if [ ! -z $PID ]; then
-    $CATALINA_HOME/bin/shutdown.sh
+    $LAUNCH_CMD $CATALINA_HOME/bin/shutdown.sh
     echo "Waiting for server shutdown to complete"
     sleep 2
     while ps -p $PID > /dev/null;
       do sleep 0.5
     done
   else
-    echo "Fedora is not currently running, you can start it with $0 start"
+    echo "Fedora is not currently running, you can start it with `basename $0` start"
   fi
 }
 
@@ -128,7 +136,7 @@ case "$1" in
   restart) stop ; start ;;
   status) status ;;
   *)
-    echo "Usage: $0 {start|stop|restart|force-start}"
+    echo "Usage: `basename $0` {start|stop|status|restart|force-start}"
     exit 2
   ;;
 esac
