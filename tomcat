@@ -23,7 +23,6 @@ export PWD=$CATALINA_HOME/logs
 #might be albe to minimize security isses by using a dedicated 'ping account'
 
 if [ $FEDORA_USER ] ; then
-  #LAUNCH_CMD="su $FEDORA_USER -c"
   LAUNCH_CMD="sudo -u $FEDORA_USER"
   echo "Using fedora user: $FEDORA_USER"
 else
@@ -47,13 +46,12 @@ else
   LAUNCH_CMD=
 fi
 
-PID_FILE=/var/lock/fedora
 PID_SEARCH="pgrep -nf \"$FEDORA_HOME.*fedora\""
 
 start()
 {
   if [ `$PID_SEARCH` ]; then
-    echo "Fedora already running! (Or the lock file was not deleted properly. Try running with \"force-start\" if you know for certain it is not running."
+    echo "Fedora already running! Try running with \"force-start\" if you know for certain it is not running."
   else
     force-start
   fi
@@ -69,8 +67,6 @@ force-start()
   while [ ! `$PID_SEARCH` ]; do
     sleep 0.5
   done
-  # make sure the right user owns the lock file
-  chown ${FEDORA_USER}. $PID_FILE
 }
 
 stop()
