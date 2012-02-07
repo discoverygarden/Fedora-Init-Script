@@ -25,7 +25,7 @@ export PWD=$CATALINA_HOME/logs
 if [ $FEDORA_USER ] ; then
   #LAUNCH_CMD="su $FEDORA_USER -c"
   LAUNCH_CMD="sudo -u $FEDORA_USER"
-  echo "Running fedora as $FEDORA_USER"
+  echo "Using fedora user: $FEDORA_USER"
 else
   #****** CHECK FOR ROOT STATUS AND BLOCK IT ******#
   ASROOT=0 # a flag to force "run as root"
@@ -48,7 +48,7 @@ else
 fi
 
 PID_FILE=/var/lock/fedora
-PID_SEARCH="pgrep -nf '$FEDORA_HOME.*fedora'"
+PID_SEARCH="pgrep -nf \"$FEDORA_HOME.*fedora\""
 
 start()
 {
@@ -66,7 +66,7 @@ force-start()
   #Kinda weak, but should work well enough...
   echo "Waiting for server startup to complete"
   sleep 2
-  while [[ ! $($PID_SEARCH | tee $PID_FILE) ]]; do
+  while [ ! `$PID_SEARCH` ]; do
     sleep 0.5
   done
   # make sure the right user owns the lock file
