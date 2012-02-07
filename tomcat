@@ -20,7 +20,8 @@ cd $CATALINA_HOME/logs
 export PWD=$CATALINA_HOME/logs
 
 if [ $FEDORA_USER ] ; then
-  LAUNCH_CMD="su $FEDORA_USER -c"
+  #LAUNCH_CMD="su $FEDORA_USER -c"
+  LAUNCH_CMD="sudo -u $FEDORA_USER"
   echo "Running fedora as $FEDORA_USER"
 else
   #****** CHECK FOR ROOT STATUS AND BLOCK IT ******#
@@ -61,7 +62,7 @@ force-start()
   #Kinda weak, but should work well enough...
   echo "Waiting for server startup to complete"
   sleep 2
-  while [[ ! $(pgrep -nf "$JAVA_HOME.*$FEDORA_HOME.*fedora" | tee $PID_FILE) ]]; do
+  while [[ ! $(pgrep -nf "$FEDORA_HOME.*fedora" | tee $PID_FILE) ]]; do
     sleep 0.5
   done
   # make sure the right user owns the lock file
@@ -78,7 +79,7 @@ stop()
 
   if [ -z $PID ]; then
     echo "Lock file missing!  Retrieving process id from pgrep"
-    PID=`pgrep -nf $JAVA_HOME.*$FEDORA_HOME.*fedora`
+    PID=`pgrep -nf $FEDORA_HOME.*fedora`
   fi
 
   if [ ! -z $PID ]; then
@@ -95,7 +96,7 @@ stop()
 
 status()
 {
-  PID=`pgrep -nf $JAVA_HOME.*$FEDORA_HOME.*fedora`
+  PID=`pgrep -nf $FEDORA_HOME.*fedora`
   if [ -z $PID ]; then
     PID=0
   fi
