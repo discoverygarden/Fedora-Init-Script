@@ -65,6 +65,7 @@ force-start()
   echo "Waiting for server startup to complete"
   sleep 2
   while [ ! `$PID_SEARCH` ]; do
+  #we could tail catalina.out and prevent passing control until init was complete
     sleep 0.5
   done
 }
@@ -72,17 +73,8 @@ force-start()
 stop()
 {
   echo "> Stopping..."
-  if [ -f $PID_FILE ]; then
-    PID=`cat $PID_FILE`
-    rm $PID_FILE # done with this
-  fi
-
-  if [ -z $PID ]; then
-    echo "Lock file missing!  Retrieving process id from pgrep"
-    PID=`$PID_SEARCH`
-  fi
-
-  if [ ! -z $PID ]; then
+  
+  if [ ! `$PID_SEARCH` ]; then
     $LAUNCH_CMD $CATALINA_HOME/bin/shutdown.sh
     echo "Waiting for server shutdown to complete"
     sleep 2
