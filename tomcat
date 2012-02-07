@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # 
 # @author: William Panting
 # This is a conglomeration of works by Steve Young, UPEI, Adam Vessey, Jason MacWilliams
@@ -39,7 +39,7 @@ else
     echo "This is not normally allowed, to force it use $0 -r"
     exit 1
   fi
-  #************************************************#
+  #run as the current user if not forced to run as root and no $FEDORA_USER set#
   LAUNCH_CMD=
 fi
 
