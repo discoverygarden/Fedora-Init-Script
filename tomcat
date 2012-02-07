@@ -73,8 +73,8 @@ force-start()
 stop()
 {
   echo "> Stopping..."
-  
-  if [ ! `$PID_SEARCH` ]; then
+  PID = `$PID_SEARCH`
+  if [ $PID ]; then
     $LAUNCH_CMD $CATALINA_HOME/bin/shutdown.sh
     echo "Waiting for server shutdown to complete"
     sleep 2
@@ -89,29 +89,12 @@ stop()
 status()
 {
   PID=`$PID_SEARCH`
-  if [ -z $PID ]; then
-    PID=0
-  fi
-  if [ -r "$PID_FILE" ]; then
-    FID=`cat $PID_FILE`
-  else
-    FID=0
-  fi
 
   # more expansive check for status
-  if [[ $PID -eq 0 && $FID -eq 0 ]]; then
+  if [ ! $PID ]; then
     # not running
     echo "Fedora is not currently running, you can start it with $0 start"
-  elif [[ $PID -eq 0 && $FID -ne 0 ]]; then
-    # shutdown error - delete lock file
-    echo "Fedora is curret *not* running, but the lockfile is still in place - deleting it now"
-    rm $PID_FILE
-  elif [[ $PID -ne $FID ]]; then
-    # running, but lockfile doesn't agree with system
-    # what to do here? kill it? restart it?
-    echo "Fedora is running (PID=$PID) but the lockfile does not agree - it might be broken"
-    echo "You can try to stop it with '$0 stop' or 'kill -9 $PID'"
-  elif [[ $PID -eq $FID ]]; then
+  elif [ $PID ]; then
     # running
     echo "Fedora is up and running with PID="$PID
   fi
