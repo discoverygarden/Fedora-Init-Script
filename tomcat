@@ -46,7 +46,7 @@ else
   LAUNCH_CMD=
 fi
 
-PID_SEARCH="pgrep -nf \"$FEDORA_HOME.*fedora\""
+PID_SEARCH="pgrep -nf $FEDORA_HOME.*fedora"
 
 start()
 {
