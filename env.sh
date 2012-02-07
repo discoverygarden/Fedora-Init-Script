@@ -6,7 +6,7 @@
 # Hamilton College
 # November 2011
 #
-setenv FEDORA_HOMEexport FEDORA_HOME=/opt/fedora
+export FEDORA_HOME=/opt/fedora
 export FEDORA_USER=fedora
 export ISLANDORA_HOME=/opt/islandora
 export ISLANDORA_PKGS=$ISLANDORA_HOME/packages

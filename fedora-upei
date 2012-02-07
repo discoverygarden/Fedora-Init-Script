@@ -1,0 +1,101 @@
+#!/bin/bash
+#
+#
+#
+#   Startup/shutdown script for running Tomcat/Fedora v1.1.
+#
+#   Linux chkconfig stuff:
+#
+#   chkconfig: 2345 70 10
+#   description: Startup/shutdown script for running Tomcat/Fedora.
+#
+# Source function library.
+#. /etc/init.d/functs
+
+source /etc/environment
+
+PROG=Fedora
+
+# *** Please make sure you change the fedora user to reflect the local setup. ***
+
+FEDORA_USER=fedora
+
+export FEDORA_HOME=/usr/local/fedora
+export DJATOKA_HOME=/opt/adore-djatoka-1.1
+export KAKADU_HOME=$DJATOKA_HOME/bin/Linux-x86-32
+export CATALINA_HOME=$FEDORA_HOME/tomcat
+export PATH=$FEDORA_HOME/server/bin:$FEDORA_HOME/client/bin:$JAVA_HOME/bin:$CATALINA_HOME/bin:$KAKADU_HOME:$PATH
+export LD_LIBRARY_PATH=$DJATOKA_HOME/lib/Linux-x86-32:$LD_LIBRARY_PATH
+export SOLR_HOME=$FEDORA_HOME/gsearch_solr/solr
+
+
+PID=/var/lock/fedora
+
+start () {
+	echo -n "Starting $PROG: "
+	# check to see if the process is already running
+	if [ -f $PID ]; then
+		echo "$PROG is already running"
+	else
+
+        echo "Starting it proper with command:"
+        echo "sudo -u $FEDORA_USER "$CATALINA_HOME/bin/startup.sh" &> /dev/null"
+        # start Tomcat/Fedora as the fedora user
+		sudo -u $FEDORA_USER "$CATALINA_HOME/bin/startup.sh" 
+        sleep 3
+		ps -ef | grep "tomcat" | grep -v "grep" &> /dev/null
+
+		if [ $? -eq 0 ]; then
+			sudo -u $FEDORA_USER touch $PID
+			echo -e "                                          [ \033[0;32m OK\033[0;39m""  ]"
+		else
+			echo -e "                                          [ \033[0;31m FAILED\033[0;39m""  ]"
+		fi
+	fi
+}
+
+stop () {
+	# stop daemon
+	echo -n "Stopping $PROG: "
+	# check to see if the process is running
+	if [ ! -f $PID ]; then
+		echo "$PROG is not running"
+	else
+		# use the fedora shutdown script to stop Tomcat/Fedora. Doesn't seem to shut down properly so issue the command twice.
+		sudo -u $FEDORA_USER ${CATALINA_HOME}/bin/shutdown.sh
+		sleep 2
+		sudo -u $FEDORA_USER ${CATALINA_HOME}/bin/shutdown.sh 
+		RETVAL=$?
+		echo -e "                                          [ \033[0;32m OK\033[0;39m""  ]"
+		[ $RETVAL = 0 ] && sudo -u $FEDORA_USER rm -f $PID
+	fi
+}
+
+restart() {
+	stop
+	start
+}
+
+case $1 in
+	start)
+		start
+	;;
+	stop)
+		stop
+	;;
+	restart)
+		restart
+	;;
+	status)
+		if [ -f $PID ]; then
+			echo "$PROG (pid `ps -ef | grep 'tomcat' | grep -v 'grep' | awk '{print $2}'`) is running..."
+		else
+			echo "$PROG has not been started."
+		fi
+	;;
+	*)
+
+	echo "Usage: $PROG {start|stop|restart|status}"
+	exit 3
+esac
+
