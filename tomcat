@@ -19,6 +19,9 @@ fi
 cd $CATALINA_HOME/logs
 export PWD=$CATALINA_HOME/logs
 
+#ping mysql (network incase not on this box) with CORRECT creds... to know if it is running wait 5 try 3 fail
+#might be albe to minimize security isses by using a dedicated 'ping account'
+
 if [ $FEDORA_USER ] ; then
   #LAUNCH_CMD="su $FEDORA_USER -c"
   LAUNCH_CMD="sudo -u $FEDORA_USER"
@@ -45,10 +48,11 @@ else
 fi
 
 PID_FILE=/var/lock/fedora
+PID_SEARCH="pgrep -nf '$FEDORA_HOME.*fedora'"
 
 start()
 {
-  if [ -a $PID_FILE ]; then
+  if [ `$PID_SEARCH` ]; then
     echo "Fedora already running! (Or the lock file was not deleted properly. Try running with \"force-start\" if you know for certain it is not running."
   else
     force-start
@@ -62,7 +66,7 @@ force-start()
   #Kinda weak, but should work well enough...
   echo "Waiting for server startup to complete"
   sleep 2
-  while [[ ! $(pgrep -nf "$FEDORA_HOME.*fedora" | tee $PID_FILE) ]]; do
+  while [[ ! $($PID_SEARCH | tee $PID_FILE) ]]; do
     sleep 0.5
   done
   # make sure the right user owns the lock file
@@ -79,7 +83,7 @@ stop()
 
   if [ -z $PID ]; then
     echo "Lock file missing!  Retrieving process id from pgrep"
-    PID=`pgrep -nf $FEDORA_HOME.*fedora`
+    PID=`$PID_SEARCH`
   fi
 
   if [ ! -z $PID ]; then
@@ -96,7 +100,7 @@ stop()
 
 status()
 {
-  PID=`pgrep -nf $FEDORA_HOME.*fedora`
+  PID=`$PID_SEARCH`
   if [ -z $PID ]; then
     PID=0
   fi
