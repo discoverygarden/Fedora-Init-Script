@@ -73,7 +73,7 @@ force-start()
 stop()
 {
   echo "> Stopping..."
-  PID = `$PID_SEARCH`
+  PID=`$PID_SEARCH`
   if [ $PID ]; then
     $LAUNCH_CMD $CATALINA_HOME/bin/shutdown.sh
     echo "Waiting for server shutdown to complete"
