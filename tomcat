@@ -10,7 +10,7 @@
 #bring in environment variables
 uname -a | grep "Ubuntu"
 if [ $? ] ; then
-  source /etc/environment
+. /etc/environment
 else
 . /mnt/islandora/env.sh
 fi
