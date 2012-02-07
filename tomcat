@@ -8,7 +8,8 @@
 # description: Tomcat; with Islandora stack.
 
 #bring in environment variables
-if [ {uname -a | grep "Ubuntu"} ]; then
+uname -a | grep "Ubuntu"
+if [ $? ] ; then
   source /etc/environment
 else
 . /mnt/islandora/env.sh
