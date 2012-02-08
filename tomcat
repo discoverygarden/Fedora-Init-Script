@@ -1,5 +1,5 @@
 #!/bin/bash
-# 
+#
 # @author: William Panting
 # This is a conglomeration of works by Steve Young, UPEI, Adam Vessey, Jason MacWilliams
 
@@ -8,19 +8,24 @@
 # description: Tomcat; with Islandora stack.
 
 #bring in environment variables
-uname -a | grep "Ubuntu"
-if [ $? ] ; then
+#uname -a | grep "Ubuntu" # this is wrong for oracle linux
+if [ -a /etc/environment ] ; then
 . /etc/environment
 else
 . /mnt/islandora/env.sh
 fi
 
 # this can mitigate some logging issus with Djatoka and gsearch
-cd $CATALINA_HOME/logs
-export PWD=$CATALINA_HOME/logs
+cd $FEDORA_HOME/server/logs
+#export PWD=$FEDORA_HOME/server/logs
 
 #ping mysql (network incase not on this box) with CORRECT creds... to know if it is running wait 5 try 3 fail
 #might be albe to minimize security isses by using a dedicated 'ping account'
+# try:
+# /etc/init.d/mysqld status
+# or
+# service mysqld status
+# tested on oracle linux
 
 if [ $FEDORA_USER ] ; then
   LAUNCH_CMD="sudo -u $FEDORA_USER"
@@ -65,24 +70,24 @@ force-start()
   echo "Waiting for server startup to complete"
   sleep 2
   while [ ! `$PID_SEARCH` ]; do
-  #we could tail catalina.out and prevent passing control until init was complete
+    #we could tail catalina.out and prevent passing control until init was complete
     sleep 0.5
   done
 }
 
 stop()
 {
-  echo "> Stopping..."
   PID=`$PID_SEARCH`
   if [ $PID ]; then
+    echo "> Stopping..."
     $LAUNCH_CMD $CATALINA_HOME/bin/shutdown.sh
     echo "Waiting for server shutdown to complete"
     sleep 2
-    while ps -p $PID > /dev/null;
-      do sleep 0.5
+    while ps -p $PID > /dev/null; do
+      sleep 0.5
     done
   else
-    echo "Fedora is not currently running, you can start it with `basename $0` start"
+    echo "Fedora is not currently running, you can start it with $0 start"
   fi
 }
 
@@ -91,12 +96,12 @@ status()
   PID=`$PID_SEARCH`
 
   # more expansive check for status
-  if [ ! $PID ]; then
-    # not running
-    echo "Fedora is not currently running, you can start it with $0 start"
-  elif [ $PID ]; then
+  if [ $PID ]; then
     # running
     echo "Fedora is up and running with PID="$PID
+  else
+    # not running
+    echo "Fedora is not currently running, you can start it with $0 start"
   fi
 
 }
