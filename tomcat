@@ -11,8 +11,6 @@
 #uname -a | grep "Ubuntu" # this is wrong for oracle linux
 if [ -a /etc/environment ] ; then
 . /etc/environment
-else
-. /mnt/islandora/env.sh
 fi
 
 # this can mitigate some logging issus with Djatoka and gsearch
