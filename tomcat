@@ -8,8 +8,7 @@
 # description: Tomcat; with Islandora stack.
 
 #bring in environment variables
-#uname -a | grep "Ubuntu" # this is wrong for oracle linux
-if [ -a /etc/environment ] ; then
+if [ -e /etc/environment ] ; then
 . /etc/environment
 fi
 
