@@ -6,6 +6,16 @@
 # it's a service!
 # chkconfig: 2345 95 15
 # description: Tomcat, with Islandora stack.
+### BEGIN INIT INFO
+# Provides: fedora
+# Required-Start: $all
+# Required-Stop: $all
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
+# Short-Description: Start tomcat at boot.
+# Description: Start the tomcat servelet container holding Fedora.
+### END INIT INFO
+
 
 #bring in environment variables
 if [ -e /etc/environment ] ; then
