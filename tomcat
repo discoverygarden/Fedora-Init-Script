@@ -5,16 +5,22 @@
 
 # it's a service!
 # chkconfig: 2345 95 15
-# description: Tomcat; with Islandora stack.
+# description: Tomcat, with Islandora stack.
 
 #bring in environment variables
 if [ -e /etc/environment ] ; then
-. /etc/environment
+  . /etc/environment
 fi
 
 # this can mitigate some logging issus with Djatoka and gsearch
 cd $FEDORA_HOME/server/logs
 #export PWD=$FEDORA_HOME/server/logs
+
+#Assume we're using the built-in...
+if [ -z "$CATALINA_HOME" ]; then
+  CATALINA_HOME="$FEDORA_HOME/tomcat"
+  echo "Using default CATALINA_HOME: $CATALINA_HOME"
+fi
 
 #ping mysql (network incase not on this box) with CORRECT creds... to know if it is running wait 5 try 3 fail
 #might be albe to minimize security isses by using a dedicated 'ping account'
@@ -24,11 +30,8 @@ cd $FEDORA_HOME/server/logs
 # service mysqld status
 # tested on oracle linux
 
-if [ $FEDORA_USER ] ; then
-  LAUNCH_CMD="sudo -u $FEDORA_USER"
-  echo "Using fedora user: $FEDORA_USER"
-else
-  #****** CHECK FOR ROOT STATUS AND BLOCK IT ******#
+#****** CHECK FOR ROOT STATUS AND BLOCK IT ******#
+if [ -z "$FEDORA_USER" ]; then
   ASROOT=0 # a flag to force "run as root"
   for var in "$@"; do
     case $var in
@@ -44,25 +47,33 @@ else
     echo "This is not normally allowed, to force it use $0 -r"
     exit 1
   fi
-  #run as the current user if not forced to run as root and no $FEDORA_USER set#
-  LAUNCH_CMD=
 fi
+
 
 PID_SEARCH="pgrep -nf $FEDORA_HOME.*fedora"
 
-start()
-{
-  if [ `$PID_SEARCH` ]; then
-    echo "Fedora already running! Try running with \"force-start\" if you know for certain it is not running."
+run_this_one() {
+  if [ -n "$FEDORA_USER" ]; then
+    #FIXME: Needs some way to export the necessary variables...
+    #Specify a shell, because the fedora user should not have one in passwd (so as to not let people login as fedora)
+    /bin/su --shell=/bin/bash --command="$1" $FEDORA_USER
   else
-    force-start
+    $1
   fi
 }
 
-force-start()
-{
+
+start() {
+  if [ `$PID_SEARCH` ]; then
+    echo "Fedora already running! Try running with \"force-start\" if you know for certain it is not running."
+  else
+    force_start
+  fi
+}
+
+force_start() {
   echo "> Starting..."
-  $LAUNCH_CMD $CATALINA_HOME/bin/startup.sh
+  run_this_one $CATALINA_HOME/bin/startup.sh
   #Kinda weak, but should work well enough...
   echo "Waiting for server startup to complete"
   sleep 2
@@ -77,7 +88,7 @@ stop()
   PID=`$PID_SEARCH`
   if [ $PID ]; then
     echo "> Stopping..."
-    $LAUNCH_CMD $CATALINA_HOME/bin/shutdown.sh
+    run_this_one $CATALINA_HOME/bin/shutdown.sh
     echo "Waiting for server shutdown to complete"
     sleep 2
     while ps -p $PID > /dev/null; do
@@ -105,7 +116,7 @@ status()
 
 case "$1" in
   start) start ;;
-  force-start) force-start ;;
+  force-start) force_start ;;
   stop) stop ;;
   restart) stop ; start ;;
   status) status ;;
