@@ -40,6 +40,50 @@ fi
 # service mysqld status
 # tested on oracle linux
 
+clean_xpath () {
+  #Get rid of the value=" bit at the beginning
+  TEMP=${1#*=\"}
+  TEMP=${TEMP%\"*}
+  echo $TEMP
+}
+
+host_from_url() {
+  #Get rid of the scheme spec and the path
+  TEMP=${1#*://}
+  TEMP=${TEMP%/*}
+  echo $TEMP
+}
+
+db_from_url () {
+  #Get rid of the scheme spec and the host name
+  TEMP=${1#*://*/}
+  TEMP=${TEMP%\?*}
+  echo $TEMP
+}
+
+#XPath'd output is 'value="whatever"'...  Need to get down to the actual value.
+DB_USER=`xmllint --xpath "/*[local-name()='server']/*[local-name()='datastore' and @id='localMySQLPool']/*[local-name()='param' and @name='dbUsername']/@value" $FEDORA_HOME/server/config/fedora.fcfg`
+DB_PASSWD=`xmllint --xpath "/*[local-name()='server']/*[local-name()='datastore' and @id='localMySQLPool']/*[local-name()='param' and @name='dbPassword']/@value" $FEDORA_HOME/server/config/fedora.fcfg`
+DB_URL=`xmllint --xpath "/*[local-name()='server']/*[local-name()='datastore' and @id='localMySQLPool']/*[local-name()='param' and @name='jdbcURL']/@value" $FEDORA_HOME/server/config/fedora.fcfg`
+
+DB_USER=`clean_xpath $DB_USER`
+DB_PASSWD=`clean_xpath $DB_PASSWD`
+DB_URL=`clean_xpath $DB_URL`
+DB_HOST=`host_from_url $DB_URL`
+DB=`db_from_url $DB_URL`
+#echo "$DB_USER"
+#echo "$DB_PASSWD"
+#echo "$DB_HOST"
+#echo "$DB"
+#exit
+
+if /usr/bin/mysqlshow --host=$DB_HOST --user=$DB_USER --password=$DB_PASSWD $DB > /dev/null ; then
+  echo "MySQL seems to be running."
+else
+  echo "MySQL does not seem to be running!"
+  exit 2
+fi
+
 #****** CHECK FOR ROOT STATUS AND BLOCK IT ******#
 if [ -z "$FEDORA_USER" ]; then
   ASROOT=0 # a flag to force "run as root"
