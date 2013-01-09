@@ -1,0 +1,113 @@
+#!/bin/sh
+#
+#
+#
+#   Startup/shutdown script for running Tomcat/Fedora v1.1.
+#
+#   Linux chkconfig stuff:
+#
+#   chkconfig: 2345 70 10
+#   description: Startup/shutdown script for running Tomcat/Fedora.
+#
+# Source function library.
+. /etc/init.d/functions
+
+PROG=Fedora
+
+# *** Please make sure you change the fedora user to reflect the local setup. ***
+
+FEDORA_USER=fedora
+
+#MYSQL_CHECK=/usr/lib64/nagios/plugins/check_mysql
+
+
+#DB_SERVER=dbs.vre.upei.ca
+
+#DB_USERNAME=server_test
+
+#DB_PASSWD=tset_revres
+
+start () {
+	echo -n $"Starting $PROG: "
+	# check to see if the process is already running
+	if [ -f /var/lock/subsys/fedora ]; then
+		echo "$PROG is already running"
+#	else
+		# check that the mysql server is running and can be logged in to
+#		$MYSQL_CHECK -H $DB_SERVER -u $DB_USERNAME -p tset_revres &>/dev/null 
+#		RETVAL=$?
+#		if [ $RETVAL -gt 0 ]; then
+#			echo "   Server not responding yet, will try again in a while"
+#			echo -n $"Starting $PROG: "
+#			sleep 5
+#			$MYSQL_CHECK -H $DB_SERVER -u $DB_USERNAME -p tset_revres &>/dev/null
+#			RETVAL=$?
+#			if [ $RETVAL -gt 0 ]; then
+#				echo -e "                                          [ \033[0;31m FAILED\033[0;39m""  ]"
+#				echo "$DB_SERVER not functioning properly"
+#				exit
+#			fi
+				
+		else
+			# start Tomcat/Fedora as the fedora user
+			su - $FEDORA_USER -c /usr/local/fedora/tomcat/bin/startup.sh &>/dev/null
+        		sleep 3
+			ps -ef | grep 'tomcat' | grep -v 'grep' &>/dev/null
+			RETVAL=$?
+			if [ $RETVAL = 0 ]; then
+				touch /var/lock/subsys/fedora
+				echo -e "                                          [ \033[0;32m OK\033[0;39m""  ]"
+			else
+				echo -e "                                          [ \033[0;31m FAILED\033[0;39m""  ]"
+			fi
+		fi
+#	fi
+}
+
+stop () {
+	# stop daemon
+	echo -n $"Stopping $PROG: "
+	# check to see if the process is running
+	if [ ! -f /var/lock/subsys/fedora ]; then
+		echo "$PROG is not running"
+	else
+		# use the fedora shutdown script to stop Tomcat/Fedora. Doesn't seem to shut down properly so issue the command twice.
+		su - $FEDORA_USER -c /usr/local/fedora/tomcat/bin/shutdown.sh &>/dev/null
+		sleep 2
+		su - $FEDORA_USER -c /usr/local/fedora/tomcat/bin/shutdown.sh &>/dev/null 
+		RETVAL=$?
+		echo -e "                                          [ \033[0;32m OK\033[0;39m""  ]"
+		[ $RETVAL = 0 ] && rm -f /var/lock/subsys/fedora
+	fi
+}
+
+restart() {
+	stop
+	start
+}
+
+case $1 in
+	start)
+		start
+	;;
+	stop)
+		stop
+	;;
+	restart)
+		restart
+	;;
+	status)
+		if [ -f /var/lock/subsys/fedora ]; then
+			echo "$PROG (pid `ps -ef | grep 'tomcat' | grep -v 'grep' | awk '{print $2}'`) is running..."
+		else
+			echo "$PROG has not been started."
+		fi
+	;;
+	*)
+
+	echo $"Usage: $PROG {start|stop|restart|status}"
+	exit 3
+esac
+
+exit $RETVAL
+
