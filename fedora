@@ -14,6 +14,7 @@ if [ -f /etc/init.d/functions]; then
      . /etc/init.d/functions
 fi
 
+PID_SEARCH="pgrep -nf $FEDORA_HOME.*fedora"
 PROG=Fedora
 
 # *** Please make sure you change the fedora user to reflect the local setup. ***
@@ -21,7 +22,7 @@ PROG=Fedora
 FEDORA_USER=fedora
 
 start () {
-	echo -n $"Starting $PROG: "
+	echo -n "Starting $PROG: "
 	# check to see if the process is already running
 	if [ -f /var/lock/fedora ]; then
 		echo "$PROG is already running"
@@ -43,15 +44,13 @@ start () {
 
 stop () {
 	# stop daemon
-	echo -n $"Stopping $PROG: "
+	echo -n "Stopping $PROG: "
 	# check to see if the process is running
 	if [ ! -f /var/lock/fedora ]; then
 		echo "$PROG is not running"
 	else
 		# use the fedora shutdown script to stop Tomcat/Fedora. Doesn't seem to shut down properly so issue the command twice.
 		su - $FEDORA_USER -c /usr/local/fedora/tomcat/bin/shutdown.sh &>/dev/null
-		sleep 2
-		su - $FEDORA_USER -c /usr/local/fedora/tomcat/bin/shutdown.sh &>/dev/null 
 		RETVAL=$?
 		echo -e "                                          [ \033[0;32m OK\033[0;39m""  ]"
 		[ $RETVAL = 0 ] && rm -f /var/lock/fedora
@@ -82,7 +81,7 @@ case $1 in
 	;;
 	*)
 
-	echo $"Usage: $PROG {start|stop|restart|status}"
+	echo "Usage: $PROG {start|stop|restart|status}"
 	exit 3
 esac
 
