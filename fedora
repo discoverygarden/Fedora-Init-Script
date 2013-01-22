@@ -10,7 +10,7 @@
 #   description: Startup/shutdown script for running Tomcat/Fedora.
 #
 # Source function library.
-if [ -f /etc/init.d/functions]; then
+if [ -f /etc/init.d/functions ]; then
      . /etc/init.d/functions
 fi
 
