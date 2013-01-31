@@ -1,0 +1,132 @@
+#!/bin/sh
+#
+#
+#
+#   Startup/shutdown script for running Tomcat/Fedora v1.1.
+#
+#   Linux chkconfig stuff:
+#
+#   chkconfig: 2345 99 15
+#   description: Startup/shutdown script for running Tomcat/Fedora.
+#
+# Source function library.
+if [ -e /etc/init.d/functions ]; then
+     . /etc/init.d/functions
+fi
+
+if [ -e /etc/environment ] ; then
+  . /etc/environment
+fi
+
+PID_SEARCH="pgrep -nf $FEDORA_HOME.*fedora"
+PROG=Fedora
+
+# *** Please make sure you change the fedora user to reflect the local setup. ***
+FEDORA_USER=fedora
+
+#Assume we're using the built-in...
+if [ -z "$CATALINA_HOME" ]; then
+  CATALINA_HOME="$FEDORA_HOME/tomcat"
+  echo "Using default CATALINA_HOME: $CATALINA_HOME"
+fi
+
+start () {
+  echo -n "Starting $PROG: "
+  # check to see if the process is already running
+  if [ `$PID_SEARCH` ]; then
+    echo "Fedora already running! Try running with \"force-start\" if you know for certain it is not running."
+  else				
+    # start Tomcat/Fedora as the fedora user
+    su - $FEDORA_USER -c $CATALINA_HOME/bin/startup.sh &>/dev/null
+    echo "Waiting for server startup to complete"
+    sleep 2
+    COUNT=0
+    while [ ! `$PID_SEARCH` && $COUNT < 60 ]; do
+      sleep 0.5
+      COUNT = $COUNT + 2
+    done
+    `PID_SEARCH`
+    RETVAL=$?
+    if [ $RETVAL = 0 ]; then
+      echo -e "                                          [ \033[0;32m OK\033[0;39m""  ]"
+    else
+      echo -e "                                          [ \033[0;31m FAILED\033[0;39m""  ]"
+    fi
+  fi
+}
+
+stop () {
+  # stop daemon
+  echo -n "Stopping $PROG: "
+  # check to see if the process is running
+  if [ `$PID_SEARCH` ]; then
+    echo "$PROG is not running"
+  # use the fedora shutdown script to stop Tomcat/Fedora.
+  su - $FEDORA_USER -c $CATALINA_HOME/bin/shutdown.sh &>/dev/null
+#		RETVAL=$?
+#		echo -e "                                          [ \033[0;32m OK\033[0;39m""  ]"
+  echo "Waiting for server shutdown to complete"
+  sleep 2
+  COUNT=0
+  while [ ! `$PID_SEARCH` && $COUNT < 60 ]; do
+    sleep 0.5
+    COUNT = $COUNT + 2
+  done
+  if [ `$PID_SEARCH` ]; then
+    echo -e "                                          [ \033[0;31m FAILED\033[0;39m""  ]"
+    echo -n "$PROG did not stop gracefully after 60 seconds... We are killing the process now... "
+    kill -9 `ps aux | grep fedora | grep -v grep | awk '{ print $2 }'`
+  fi
+  else
+    echo "Fedora is not currently running, you can start it with $0 start"
+  fi
+}
+
+status()
+{
+  PID=`$PID_SEARCH`
+
+  # more expansive check for status
+  if [ $PID ]; then
+    # running
+    echo "Fedora is up and running with PID="$PID
+  else
+    # not running
+    echo "Fedora is not currently running, you can start it with $0 start"
+  fi
+
+}
+
+
+deploy()
+{
+  stop
+  start
+  sleep 30
+  stop
+}
+
+case $1 in
+  start)
+    start
+  ;;
+  stop)
+    stop
+  ;;
+  restart) 
+    stop ; start
+  ;;
+  status)
+    status
+  ;;
+  deploy)
+    deploy
+  ;;
+*)
+
+	echo "Usage: $PROG {start|stop|restart|status}"
+	exit 3
+esac
+
+exit $RETVAL
+
