@@ -62,6 +62,21 @@ restart() {
 	start
 }
 
+deploy() {
+	stop
+	start
+	sleep 30
+	stop
+        PID=`$PID_SEARCH`
+	if [ $PID ]; then
+		echo "Waiting for fedora shutdown to complete"
+		sleep 2
+		while ps -p $PID > /dev/null; do
+			sleep 0.5
+		done
+	fi
+}
+
 case $1 in
 	start)
 		start
@@ -78,6 +93,9 @@ case $1 in
 		else
 			echo "$PROG has not been started."
 		fi
+	;;
+	deploy)
+		deloy
 	;;
 	*)
 
