@@ -16,6 +16,10 @@
 # Description: Start the tomcat servelet container holding Fedora.
 ### END INIT INFO
 
+# Source function library.
+if [ -e /etc/init.d/functions ]; then
+     . /etc/init.d/functions
+fi
 
 #bring in environment variables
 if [ -e /etc/environment ] ; then
@@ -87,9 +91,16 @@ force_start() {
   #Kinda weak, but should work well enough...
   echo "Waiting for server startup to complete"
   sleep 2
+  COUNT=0
   while [ ! `$PID_SEARCH` ]; do
     #we could tail catalina.out and prevent passing control until init was complete
     sleep 0.5
+    if [ $COUNT -gt 120 ]; then
+      echo -e "Fedora is not starting... I am so sad... and I am giving up...  <sniff>"
+      exit 1
+    fi
+    COUNT=`expr $COUNT + 1`
+    echo $COUNT
   done
 }
 

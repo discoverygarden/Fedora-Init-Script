@@ -9,99 +9,152 @@
 #   chkconfig: 2345 70 10
 #   description: Startup/shutdown script for running Tomcat/Fedora.
 #
+### BEGIN INIT INFO
+# Provides: fedora
+# Required-Start: $network $syslog
+# Required-Stop: $network $syslog
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
+# Description: Tomcat service for fedora
+# Short-Description: start and stop fedora
+### END INIT INFO
+
 # Source function library.
 if [ -f /etc/init.d/functions ]; then
      . /etc/init.d/functions
 fi
 
-PID_SEARCH="pgrep -nf $FEDORA_HOME.*fedora"
-PROG=Fedora
+if [ -e /etc/environment ] ; then
+  . /etc/environment
+fi
+
+# Begin configuration section
+# Number of seconds to wait after nicely requesting stop
+START_STOP_WAIT=30
+
+# This should be a different file for each tomcat
+#CATALINA_PID="/tmp/fedora.pid"
 
 # *** Please make sure you change the fedora user to reflect the local setup. ***
-
+# Most environment variables are set in the .profil/.bash_profile file of the fedora user
+## I probably should put this all into /etc/environment like the other guys did...
 FEDORA_USER=fedora
+CATALINA_HOME="/usr/local/fedora/tomcat"
+
+# End configuration section
 
 start () {
-	echo -n "Starting $PROG: "
-	# check to see if the process is already running
-	if [ -f /var/lock/fedora ]; then
-		echo "$PROG is already running"
-				
-	else
-		# start Tomcat/Fedora as the fedora user
-		su - $FEDORA_USER -c /usr/local/fedora/tomcat/bin/startup.sh &>/dev/null
-       		sleep 3
-		ps -ef | grep 'tomcat' | grep -v 'grep' &>/dev/null
-		RETVAL=$?
-		if [ $RETVAL = 0 ]; then
-			touch /var/lock/fedora
-			echo -e "                                          [ \033[0;32m OK\033[0;39m""  ]"
-		else
-			echo -e "                                          [ \033[0;31m FAILED\033[0;39m""  ]"
-		fi
-	fi
+  pid=`cat $CATALINA_PID 2>/dev/null`
+  if [ -n "$pid" ]; then
+    echo "Fedora is already running (pid: $pid)"
+  else
+	# start Tomcat/Fedora as the fedora user
+    echo "Starting Fedora"
+    /bin/su - $FEDORA_USER -c $CATALINA_HOME/bin/startup.sh &>/dev/null 2>&1
+    startwait=$START_STOP_WAIT
+    count=0
+    until [ $count -gt $startwait ]; do
+      echo -n "."
+      sleep 1
+      count=`expr $count + 1`
+      pid=`cat $CATALINA_PID 2>/dev/null`
+      if [ `ps -p $pid | grep -c $pid` -gt '0' ]; then
+        break
+      fi
+    done
+    ps -p $pid | grep -c $pid &>/dev/null
+    RETVAL=$?
+    if [ $RETVAL = 0 ]; then
+      echo ""
+      echo "Fedora has started..."
+      return 0
+    else
+      echo ""
+      echo "Fedora failed to start... Check your logs"
+      return 1
+    fi
+  fi
 }
 
 stop () {
 	# stop daemon
-	echo -n "Stopping $PROG: "
-	# check to see if the process is running
-	if [ ! -f /var/lock/fedora ]; then
-		echo "$PROG is not running"
-	else
-		# use the fedora shutdown script to stop Tomcat/Fedora. Doesn't seem to shut down properly so issue the command twice.
-		su - $FEDORA_USER -c /usr/local/fedora/tomcat/bin/shutdown.sh &>/dev/null
-		RETVAL=$?
-		echo -e "                                          [ \033[0;32m OK\033[0;39m""  ]"
-		[ $RETVAL = 0 ] && rm -f /var/lock/fedora
-	fi
+  pid=`cat $CATALINA_PID 2>/dev/null`
+  if [ -n "$pid" ]; then
+    /bin/su - $FEDORA_USER -c $CATALINA_HOME/bin/shutdown.sh &>/dev/null 2>&1
+    echo "Stopping Fedora"
+    kwait=$START_STOP_WAIT
+    count=0;
+    until [ `ps -p $pid | grep -c $pid` = '0' ] || [ $count -gt $kwait ]; do
+      echo -n ".";
+      sleep 1
+      count=`expr $count + 1`
+    done
+
+    echo ""
+
+    if [ $count -gt $kwait ]; then
+      echo "process is still running after $START_STOP_WAIT seconds, killing process"
+      kill $pid
+      sleep 3
+
+      # if it’s still running use kill -9
+      if [ `ps -p $pid | grep -c $pid` -gt '0' ]; then
+      echo "process is still running, using kill -9"
+      kill -9 $pid
+      sleep 3
+      fi
+      # success, delete PID file
+      rm $CATALINA_PID
+    fi
+    if [ `ps -p $pid | grep -c $pid` -gt '0' ]; then
+      echo "process is still running, I give up"
+    else
+      echo "Fedora shutdown completed"
+    fi
+  else
+    echo "Fedora is not running"
+  fi
+  return 0
 }
 
 restart() {
-	stop
-	start
+  stop
+  start
 }
 
 deploy() {
-	stop
-	start
-	sleep 30
-	stop
-        PID=`$PID_SEARCH`
-	if [ $PID ]; then
-		echo "Waiting for fedora shutdown to complete"
-		sleep 2
-		while ps -p $PID > /dev/null; do
-			sleep 0.5
-		done
-	fi
+  stop
+  start
+  sleep 30
+  stop
 }
 
 case $1 in
-	start)
-		start
-	;;
-	stop)
-		stop
-	;;
-	restart)
-		restart
-	;;
-	status)
-		if [ -f /var/lock/fedora ]; then
-			echo "$PROG (pid `ps -ef | grep 'tomcat' | grep -v 'grep' | awk '{print $2}'`) is running..."
-		else
-			echo "$PROG has not been started."
-		fi
-	;;
-	deploy)
-		deploy
-	;;
-	*)
-
-	echo "Usage: $PROG {start|stop|restart|status}"
-	exit 3
+  start)
+    start
+  ;;
+  stop)
+    stop
+  ;;
+  restart)
+    restart
+  ;;
+  status)
+    pid=`cat $CATALINA_PID 2>/dev/null`
+    if [ -n "$pid" ]; then
+      echo "Fedora is running with pid: $pid"
+    else
+      echo "Fedora is not running"
+    fi
+  ;;
+  deploy)
+    deploy
+  ;;
+  *)
+    echo "Usage: $0 {start|stop|restart|status}"
+    exit 3
 esac
 
 exit $RETVAL
+
 

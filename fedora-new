@@ -21,9 +21,6 @@ fi
 PID_SEARCH="pgrep -nf $FEDORA_HOME.*fedora"
 PROG=Fedora
 
-# *** Please make sure you change the fedora user to reflect the local setup. ***
-FEDORA_USER=fedora
-
 #Assume we're using the built-in...
 if [ -z "$CATALINA_HOME" ]; then
   CATALINA_HOME="$FEDORA_HOME/tomcat"
@@ -41,7 +38,7 @@ start () {
     echo "Waiting for server startup to complete"
     sleep 2
     COUNT=0
-    while [ ! `$PID_SEARCH` && $COUNT < 60 ]; do
+    while [ [ ! `$PID_SEARCH` ] && [ $COUNT < 60 ] ]; do
       sleep 0.5
       COUNT = $COUNT + 2
     done
@@ -68,7 +65,7 @@ stop () {
   echo "Waiting for server shutdown to complete"
   sleep 2
   COUNT=0
-  while [ ! `$PID_SEARCH` && $COUNT < 60 ]; do
+  while [ [ ! `$PID_SEARCH` ] && [ $COUNT < 60 ] ]; do
     sleep 0.5
     COUNT = $COUNT + 2
   done
