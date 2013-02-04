@@ -35,12 +35,6 @@ START_STOP_WAIT=30
 # This should be a different file for each tomcat
 #CATALINA_PID="/tmp/fedora.pid"
 
-# *** Please make sure you change the fedora user to reflect the local setup. ***
-# Most environment variables are set in the .profil/.bash_profile file of the fedora user
-## I probably should put this all into /etc/environment like the other guys did...
-FEDORA_USER=fedora
-CATALINA_HOME="/usr/local/fedora/tomcat"
-
 # End configuration section
 
 start () {
