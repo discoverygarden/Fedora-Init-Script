@@ -16,10 +16,6 @@
 # Description: Start the tomcat servelet container holding Fedora.
 ### END INIT INFO
 
-# Source function library.
-if [ -e /etc/init.d/functions ]; then
-     . /etc/init.d/functions
-fi
 
 #bring in environment variables
 if [ -e /etc/environment ] ; then
@@ -65,6 +61,7 @@ fi
 
 
 PID_SEARCH="pgrep -nf $FEDORA_HOME.*fedora"
+START_STOP_WAIT=30
 
 run_this_one() {
   if [ -n "$FEDORA_USER" ]; then
@@ -91,17 +88,28 @@ force_start() {
   #Kinda weak, but should work well enough...
   echo "Waiting for server startup to complete"
   sleep 2
-  COUNT=0
-  while [ ! `$PID_SEARCH` ]; do
-    #we could tail catalina.out and prevent passing control until init was complete
-    sleep 0.5
-    if [ $COUNT -gt 120 ]; then
-      echo -e "Fedora is not starting... I am so sad... and I am giving up...  <sniff>"
-      exit 1
+  startwait=$START_STOP_WAIT
+  count=0
+  while [ $count -lt $startwait ]; do
+    echo -n "."
+    sleep 1
+    count=`expr $count + 1`
+    PID=`$PID_SEARCH`
+    if [ $PID -gt '0' ]; then
+      break
     fi
-    COUNT=`expr $COUNT + 1`
-    echo $COUNT
   done
+  ps -p $PID | grep -c $PID &>/dev/null
+    RETVAL=$?
+    if [ $RETVAL = 0 ]; then
+      echo ""
+      echo "Fedora has started..."
+      return 0
+    else
+      echo ""
+      echo "Fedora failed to start... Check your logs"
+      return 1
+    fi
 }
 
 stop()
@@ -112,9 +120,33 @@ stop()
     run_this_one $CATALINA_HOME/bin/shutdown.sh
     echo "Waiting for server shutdown to complete"
     sleep 2
-    while ps -p $PID > /dev/null; do
-      sleep 0.5
+    kwait=$START_STOP_WAIT
+    count=0;
+    while [ps -p $PID > /dev/null] || [ $count -gt $kwait ]; do
+      echo -n ".";
+      sleep 1
+      count=`expr $count + 1`
     done
+    echo ""
+    if [ $count -gt $kwait ]; then
+      echo "process is still running after $START_STOP_WAIT seconds, killing process"
+      kill $PID
+      sleep 5
+
+      # if it’s still running use kill -9
+      if [ $PID -gt '0' ]; then
+      echo "process is still running, using kill -9"
+      kill -9 $PID
+      sleep 3
+      fi
+      # success, delete PID file
+      rm $CATALINA_PID
+    fi
+    if [ $PID -gt '0' ]; then
+      echo "process is still running, I give up"
+    else
+      echo "Fedora shutdown completed"
+    fi
   else
     echo "Fedora is not currently running, you can start it with $0 start"
   fi
@@ -135,12 +167,21 @@ status()
 
 }
 
+deploy()
+{
+  stop
+  start
+  sleep 30
+  stop
+}
+
 case "$1" in
   start) start ;;
   force-start) force_start ;;
   stop) stop ;;
   restart) stop ; start ;;
   status) status ;;
+  deploy) deploy ;;
   *)
     echo "Usage: `basename $0` {start|stop|status|restart|force-start}"
     exit 2
