@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # @author: William Panting
-# This is a conglomeration of works by Steve Young, UPEI, Adam Vessey, Jason MacWilliams
+# This is a conglomeration of works by Steve Young, Richard Wincewicz, Adam Vessey, Jason MacWilliams
 
 # it's a service!
 # chkconfig: 2345 95 15
@@ -16,21 +16,21 @@
 # Description: Start the tomcat servelet container holding Fedora.
 ### END INIT INFO
 
+# Source function library.
+if [ -f /etc/init.d/functions ]; then
+     . /etc/init.d/functions
+fi
 
 #bring in environment variables
 if [ -e /etc/environment ] ; then
   . /etc/environment
 fi
 
-# this can mitigate some logging issus with Djatoka and gsearch
-cd $FEDORA_HOME/server/logs
-#export PWD=$FEDORA_HOME/server/logs
-
 #Assume we're using the built-in...
-if [ -z "$CATALINA_HOME" ]; then
-  CATALINA_HOME="$FEDORA_HOME/tomcat"
-  echo "Using default CATALINA_HOME: $CATALINA_HOME"
-fi
+#if [ -z "$CATALINA_HOME" ]; then
+#  CATALINA_HOME="$FEDORA_HOME/tomcat"
+#  echo "Using default CATALINA_HOME: $CATALINA_HOME"
+#fi
 
 #ping mysql (network incase not on this box) with CORRECT creds... to know if it is running wait 5 try 3 fail
 #might be albe to minimize security isses by using a dedicated 'ping account'
@@ -67,7 +67,7 @@ run_this_one() {
   if [ -n "$FEDORA_USER" ]; then
     #FIXME: Needs some way to export the necessary variables...
     #Specify a shell, because the fedora user should not have one in passwd (so as to not let people login as fedora)
-    /bin/su --shell=/bin/bash --command="$1" $FEDORA_USER
+    /bin/su - $FEDORA_USER --shell=/bin/bash --command="$1" 
   else
     $1
   fi
@@ -85,7 +85,7 @@ start() {
 force_start() {
   echo "> Starting..."
   run_this_one $CATALINA_HOME/bin/startup.sh
-  #Kinda weak, but should work well enough...
+ #Kinda weak, but should work well enough...
   echo "Waiting for server startup to complete"
   sleep 2
   startwait=$START_STOP_WAIT
@@ -95,11 +95,11 @@ force_start() {
     sleep 1
     count=`expr $count + 1`
     PID=`$PID_SEARCH`
-    if [ $PID -gt '0' ]; then
+    if [ ! $PID = "" ]; then
       break
     fi
   done
-  ps -p $PID | grep -c $PID &>/dev/null
+  ps -p $PID &>/dev/null 2>/dev/null
     RETVAL=$?
     if [ $RETVAL = 0 ]; then
       echo ""
@@ -122,10 +122,15 @@ stop()
     sleep 2
     kwait=$START_STOP_WAIT
     count=0;
-    while [ps -p $PID > /dev/null] || [ $count -gt $kwait ]; do
-      echo -n ".";
+    while [ $count -lt $kwait ]; do
       sleep 1
       count=`expr $count + 1`
+      PID=`$PID_SEARCH`
+      if [ ! $PID = "" ]; then
+        echo -n "."
+      else
+        break
+      fi
     done
     echo ""
     if [ $count -gt $kwait ]; then
@@ -142,7 +147,7 @@ stop()
       # success, delete PID file
       rm $CATALINA_PID
     fi
-    if [ $PID -gt '0' ]; then
+    if [ ! $PID = "" ]; then
       echo "process is still running, I give up"
     else
       echo "Fedora shutdown completed"
