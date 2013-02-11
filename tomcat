@@ -142,13 +142,15 @@ stop()
       if [ $PID -gt '0' ]; then
       echo "process is still running, using kill -9"
       kill -9 $PID
-      sleep 3
+      sleep 5
       fi
       # success, delete PID file
       rm $CATALINA_PID
+      return 0
     fi
     if [ ! $PID = "" ]; then
       echo "process is still running, I give up"
+      return 1
     else
       echo "Fedora shutdown completed"
     fi
