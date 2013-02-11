@@ -165,9 +165,11 @@ status()
   if [ $PID ]; then
     # running
     echo "Fedora is up and running with PID="$PID
+    return 0
   else
     # not running
     echo "Fedora is not currently running, you can start it with $0 start"
+    return 1
   fi
 
 }
