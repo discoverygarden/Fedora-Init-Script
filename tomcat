@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # @author: William Panting
-# This is a conglomeration of works by Steve Young, UPEI, Adam Vessey, Jason MacWilliams
+# This is a conglomeration of works by Steve Young, Richard Wincewicz, Adam Vessey, Jason MacWilliams
 
 # it's a service!
 # chkconfig: 2345 95 15
@@ -16,21 +16,35 @@
 # Description: Start the tomcat servelet container holding Fedora.
 ### END INIT INFO
 
+## These are being set in /etc/environment
+#FEDORA_HOME=/usr/local/fedora
+#CATALINA_HOME=$FEDORA_HOME/tomcat
+#FEDORA_USER=fedora
+
+## These still need to be in the fedora user's profile
+#export FEDORA_HOME=/usr/local/fedora
+#export CATALINA_HOME=$FEDORA_HOME/tomcat
+#export FEDORA_USER=fedora
+#export FEDORA_HOME=/usr/local/fedora
+#export CATALINA_HOME=/usr/local/fedora/tomcat
+#export JAVA_OPTS="-Xms1024m -Xmx1024m -XX:MaxPermSize=512m -XX:+CMSClassUnloadingEnabled -Djavax.net.ssl.trustStore=/usr/local/fedora/server/truststore -Djavax.net.ssl.trustStorePassword=tomcat"
+#export JAVA_HOME=$( dirname $( dirname $( readlink -e /usr/bin/java ) ) )
+
+# Source function library.
+if [ -f /etc/init.d/functions ]; then
+     . /etc/init.d/functions
+fi
 
 #bring in environment variables
 if [ -e /etc/environment ] ; then
   . /etc/environment
 fi
 
-# this can mitigate some logging issus with Djatoka and gsearch
-cd $FEDORA_HOME/server/logs
-#export PWD=$FEDORA_HOME/server/logs
-
 #Assume we're using the built-in...
-if [ -z "$CATALINA_HOME" ]; then
-  CATALINA_HOME="$FEDORA_HOME/tomcat"
-  echo "Using default CATALINA_HOME: $CATALINA_HOME"
-fi
+#if [ -z "$CATALINA_HOME" ]; then
+#  CATALINA_HOME="$FEDORA_HOME/tomcat"
+#  echo "Using default CATALINA_HOME: $CATALINA_HOME"
+#fi
 
 #ping mysql (network incase not on this box) with CORRECT creds... to know if it is running wait 5 try 3 fail
 #might be albe to minimize security isses by using a dedicated 'ping account'
@@ -61,12 +75,13 @@ fi
 
 
 PID_SEARCH="pgrep -nf $FEDORA_HOME.*fedora"
+START_STOP_WAIT=30
 
 run_this_one() {
   if [ -n "$FEDORA_USER" ]; then
     #FIXME: Needs some way to export the necessary variables...
     #Specify a shell, because the fedora user should not have one in passwd (so as to not let people login as fedora)
-    /bin/su --shell=/bin/bash --command="$1" $FEDORA_USER
+    /bin/su - $FEDORA_USER --shell=/bin/bash --command="$1" 
   else
     $1
   fi
@@ -84,13 +99,31 @@ start() {
 force_start() {
   echo "> Starting..."
   run_this_one $CATALINA_HOME/bin/startup.sh
-  #Kinda weak, but should work well enough...
+ #Kinda weak, but should work well enough...
   echo "Waiting for server startup to complete"
   sleep 2
-  while [ ! `$PID_SEARCH` ]; do
-    #we could tail catalina.out and prevent passing control until init was complete
-    sleep 0.5
+  startwait=$START_STOP_WAIT
+  count=0
+  while [ $count -lt $startwait ]; do
+    echo -n "."
+    sleep 1
+    count=`expr $count + 1`
+    PID=`$PID_SEARCH`
+    if [ ! $PID = "" ]; then
+      break
+    fi
   done
+  ps -p $PID &>/dev/null 2>/dev/null
+    RETVAL=$?
+    if [ $RETVAL = 0 ]; then
+      echo ""
+      echo "Fedora has started..."
+      return 0
+    else
+      echo ""
+      echo "Fedora failed to start... Check your logs"
+      return 1
+    fi
 }
 
 stop()
@@ -101,9 +134,40 @@ stop()
     run_this_one $CATALINA_HOME/bin/shutdown.sh
     echo "Waiting for server shutdown to complete"
     sleep 2
-    while ps -p $PID > /dev/null; do
-      sleep 0.5
+    kwait=$START_STOP_WAIT
+    count=0;
+    while [ $count -lt $kwait ]; do
+      sleep 1
+      count=`expr $count + 1`
+      PID=`$PID_SEARCH`
+      if [ ! $PID = "" ]; then
+        echo -n "."
+      else
+        break
+      fi
     done
+    echo ""
+    if [ $count -gt $kwait ]; then
+      echo "process is still running after $START_STOP_WAIT seconds, killing process"
+      kill $PID
+      sleep 5
+
+      # if it’s still running use kill -9
+      if [ $PID -gt '0' ]; then
+      echo "process is still running, using kill -9"
+      kill -9 $PID
+      sleep 5
+      fi
+      # success, delete PID file
+      rm $CATALINA_PID
+      return 0
+    fi
+    if [ ! $PID = "" ]; then
+      echo "process is still running, I give up"
+      return 1
+    else
+      echo "Fedora shutdown completed"
+    fi
   else
     echo "Fedora is not currently running, you can start it with $0 start"
   fi
@@ -117,11 +181,21 @@ status()
   if [ $PID ]; then
     # running
     echo "Fedora is up and running with PID="$PID
+    return 0
   else
     # not running
     echo "Fedora is not currently running, you can start it with $0 start"
+    return 1
   fi
 
+}
+
+deploy()
+{
+  stop
+  start
+  sleep 30
+  stop
 }
 
 case "$1" in
@@ -130,6 +204,7 @@ case "$1" in
   stop) stop ;;
   restart) stop ; start ;;
   status) status ;;
+  deploy) deploy ;;
   *)
     echo "Usage: `basename $0` {start|stop|status|restart|force-start}"
     exit 2
