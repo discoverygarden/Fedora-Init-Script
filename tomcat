@@ -65,7 +65,7 @@ START_STOP_WAIT=30
 run_this_one() {
   if [ -n "$FEDORA_USER" ]; then
     #Specify a shell, because the fedora user should not have one in passwd (so as to not let people login as fedora)
-    /bin/su - $FEDORA_USER --shell=/bin/bash --command="$1" 
+    /bin/su $FEDORA_USER --shell=/bin/bash --command="$1" 
   else
     $1
   fi
