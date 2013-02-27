@@ -17,7 +17,7 @@
 
 # These are actually being set in /etc/environment... They are here so that the stack_install.sh script will work without requiring a log out and log back in...
 ## stack_install.sh will comment out these lines at the end of the run... as /etc/environment is being sourced after these line, settings in there will override
-## the values that are set below.
+## the values that are set below (even if these are left uncommented)
 export FEDORA_USER=fedora
 export FEDORA_HOME=/usr/local/fedora
 export CATALINA_HOME=/usr/local/fedora/tomcat
