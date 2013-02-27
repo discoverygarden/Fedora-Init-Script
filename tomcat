@@ -15,7 +15,10 @@
 # Description: Start the tomcat servelet container holding Fedora.
 ### END INIT INFO
 
-FEDORA_USER=fedora
+# These are actually being set in /etc/environment... They are here so that the stack_install.sh script will work without requiring a log out and log back in...
+## stack_install.sh will comment out these lines at the end of the run... as /etc/environment is being sourced after these line, settings in there will override
+## the values that are set below.
+export FEDORA_USER=fedora
 export FEDORA_HOME=/usr/local/fedora
 export CATALINA_HOME=/usr/local/fedora/tomcat
 export JAVA_OPTS="-Xms1024m -Xmx1024m -XX:MaxPermSize=512m -XX:+CMSClassUnloadingEnabled -Djavax.net.ssl.trustStore=/usr/local/fedora/server/truststore -Djavax.net.ssl.trustStorePassword=tomcat"
@@ -174,6 +177,7 @@ deploy()
 {
   stop
   start
+  echo "Sleeping for 30 seconds"
   sleep 30
   stop
 }
