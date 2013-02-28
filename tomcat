@@ -21,9 +21,9 @@ if [ -f /etc/init.d/functions ]; then
 fi
 
 #bring in environment variables
-if [ -f /etc/profile.d/fedora.sh ] ; then
-  . /etc/profile.d/fedora.sh
-fi
+#if [ -f /etc/profile.d/fedora.sh ] ; then
+#  . /etc/profile.d/fedora.sh
+#fi
 
 #ping mysql (network incase not on this box) with CORRECT creds... to know if it is running wait 5 try 3 fail
 #might be albe to minimize security isses by using a dedicated 'ping account'
@@ -58,7 +58,7 @@ START_STOP_WAIT=30
 run_this_one() {
   if [ -n "$FEDORA_USER" ]; then
     #Specify a shell, because the fedora user should not have one in passwd (so as to not let people login as fedora)
-    /bin/su $FEDORA_USER --shell=/bin/bash --command="$1" 
+    /bin/su - $FEDORA_USER --shell=/bin/bash --command="$1" 
   else
     $1
   fi
