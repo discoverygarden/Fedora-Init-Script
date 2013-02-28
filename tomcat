@@ -15,18 +15,6 @@
 # Description: Start the tomcat servelet container holding Fedora.
 ### END INIT INFO
 
-<<<<<<< HEAD
-=======
-# These are actually being set in /etc/environment... They are here so that the stack_install.sh script will work without requiring a log out and log back in...
-## stack_install.sh will comment out these lines at the end of the run... as /etc/environment is being sourced after these line, settings in there will override
-## the values that are set below (even if these are left uncommented)
-export FEDORA_USER=fedora
-export FEDORA_HOME=/usr/local/fedora
-export CATALINA_HOME=/usr/local/fedora/tomcat
-export JAVA_OPTS="-Xms1024m -Xmx1024m -XX:MaxPermSize=512m -XX:+CMSClassUnloadingEnabled -Djavax.net.ssl.trustStore=/usr/local/fedora/server/truststore -Djavax.net.ssl.trustStorePassword=tomcat"
-export JAVA_HOME=$( dirname $( dirname $( readlink -e /usr/bin/java ) ) )
-
->>>>>>> 64804bb619a833cda48ce92e923af7737126d62a
 # Source function library.
 if [ -f /etc/init.d/functions ]; then
      . /etc/init.d/functions
@@ -64,7 +52,6 @@ if [ -z "$FEDORA_USER" ]; then
   fi
 fi
 
-
 PID_SEARCH="pgrep -nf $FEDORA_HOME.*fedora"
 START_STOP_WAIT=30
 
@@ -76,7 +63,6 @@ run_this_one() {
     $1
   fi
 }
-
 
 start() {
   if [ `$PID_SEARCH` ]; then
