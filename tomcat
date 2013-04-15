@@ -129,26 +129,27 @@ stop()
       fi
     done
     echo ""
-    if [ $count -gt $kwait ]; then
+    if [ $count -eq $kwait ]; then
       echo "process is still running after $START_STOP_WAIT seconds, killing process"
+      PID=`$PID_SEARCH`
       kill $PID
       sleep 5
 
       # if it’s still running use kill -9
-      if [ $PID -gt '0' ]; then
+      PID=`$PID_SEARCH`
+      if [ $PID ]; then
       echo "process is still running, using kill -9"
       kill -9 $PID
       sleep 5
       fi
-      # success, delete PID file
-      rm $CATALINA_PID
-      return 0
     fi
-    if [ ! $PID = "" ]; then
+    PID=`$PID_SEARCH`
+    if [ $PID ]; then
       echo "process is still running, I give up"
       return 1
     else
       echo "Fedora shutdown completed"
+      return 0
     fi
   else
     echo "Fedora is not currently running, you can start it with $0 start"
