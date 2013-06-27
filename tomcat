@@ -25,7 +25,7 @@ fi
 #export FEDORA_HOME=/usr/local/fedora
 #export CATALINA_HOME=/usr/local/fedora/tomcat
 #export JAVA_OPTS="-Xms1024m -Xmx1024m -XX:MaxPermSize=512m -XX:+CMSClassUnloadingEnabled -Djavax.net.ssl.trustStore=/usr/local/fedora/server/truststore -Djavax.net.ssl.trustStorePassword=tomcat"
-#export JAVA_HOME=/usr/lib/jvm/java-6-oracle/jre
+#export JAVA_HOME=$( dirname $( dirname $( readlink -e /usr/bin/java ) ) )
 #export FEDORA_USER=fedora
 
 if [ -f /etc/profile.d/fedora.sh ] ; then
