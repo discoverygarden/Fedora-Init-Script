@@ -59,7 +59,7 @@ if [ -z "$FEDORA_USER" ]; then
   fi
 fi
 
-PID_SEARCH="pgrep -nf $FEDORA_HOME.*tomcat"
+PID_SEARCH="pgrep -nf -u $FEDORA_USER $FEDORA_HOME.*tomcat"
 START_STOP_WAIT=30
 
 run_this_one() {
@@ -148,6 +148,10 @@ stop()
       echo "process is still running, I give up"
       return 1
     else
+      if [ -f $CATALINA_PID ]; then
+        echo "Removing/clearing stale PID file"
+        rm -rf $CATALINA_PID
+      fi
       echo "Fedora shutdown completed"
       return 0
     fi
