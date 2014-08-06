@@ -25,7 +25,7 @@ fi
 #export FEDORA_HOME=/usr/local/fedora
 #export CATALINA_HOME=/usr/local/fedora/tomcat
 #export JAVA_OPTS="-Xms1024m -Xmx1024m -XX:MaxPermSize=512m -XX:+CMSClassUnloadingEnabled -Djavax.net.ssl.trustStore=/usr/local/fedora/server/truststore -Djavax.net.ssl.trustStorePassword=tomcat"
-#export JAVA_HOME=/usr/lib/jvm/java-6-oracle/jre
+#export JAVA_HOME=$( dirname $( dirname $( readlink -e /usr/bin/java ) ) )
 #export FEDORA_USER=fedora
 
 if [ -f /etc/profile.d/fedora.sh ] ; then
@@ -59,13 +59,13 @@ if [ -z "$FEDORA_USER" ]; then
   fi
 fi
 
-PID_SEARCH="pgrep -nf $FEDORA_HOME.*fedora"
+PID_SEARCH="pgrep -nf -u $FEDORA_USER $FEDORA_HOME.*tomcat"
 START_STOP_WAIT=30
 
 run_this_one() {
   if [ -n "$FEDORA_USER" ]; then
     #Specify a shell, because the fedora user should not have one in passwd (so as to not let people login as fedora)
-    /bin/su - $FEDORA_USER --shell=/bin/bash --command="$1" 
+    /bin/su - $FEDORA_USER --shell=/bin/bash --command="$1"
   else
     $1
   fi
@@ -148,6 +148,10 @@ stop()
       echo "process is still running, I give up"
       return 1
     else
+      if [ -f $CATALINA_PID ]; then
+        echo "Removing/clearing stale PID file"
+        rm -rf $CATALINA_PID
+      fi
       echo "Fedora shutdown completed"
       return 0
     fi
