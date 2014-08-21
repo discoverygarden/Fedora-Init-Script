@@ -75,6 +75,10 @@ start() {
   if [ `$PID_SEARCH` ]; then
     echo "Fedora already running! Try running with \"force-start\" if you know for certain it is not running."
   else
+    if [ -f $CATALINA_PID ]; then
+      echo "Removing/clearing stale PID file"
+      rm -rf $CATALINA_PID
+    fi
     force_start
   fi
 }
